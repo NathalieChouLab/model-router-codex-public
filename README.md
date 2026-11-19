@@ -1,5 +1,7 @@
 # Model Router for Codex
 
+![Model Router for Codex — Right agent. Right model. Right level of reasoning.](assets/banner.svg)
+
 **Right agent. Right model. Right level of reasoning.**
 
 A lightweight, open-source toolkit for turning OpenAI Codex into a coordinated team of specialized coding agents. Instead of assigning every phase of a task to the same model, Model Router helps Codex select the right specialist, reassess when new evidence appears, and independently verify important changes.
@@ -7,7 +9,7 @@ A lightweight, open-source toolkit for turning OpenAI Codex into a coordinated t
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB)](#quick-start)
 [![Agents](https://img.shields.io/badge/native%20agents-9-5865F2)](#meet-the-agents)
-[![Installer tests](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml/badge.svg?branch=v2%2Fnine-agent-public)](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml)
+[![Installer tests](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml)
 
 ## Why Model Router?
 
@@ -48,13 +50,13 @@ Example flow for complex work. Not every task needs every phase. Routing is inst
 Requirements: Python 3.11+ and a Codex version supporting custom subagents. Run in a terminal (Windows users can substitute `python` or `py -3.11` for `python3`).
 
 ```sh
-git clone --branch v2/nine-agent-public https://github.com/NathalieChouLab/model-router-codex-public.git
+git clone https://github.com/NathalieChouLab/model-router-codex-public.git
 cd model-router-codex-public
 python3 install.py --global --dry-run
 python3 install.py --global
 ```
 
-The commands above target the V2 branch. For a single repository, replace `--global` with `--project /path/to/project`. Restart Codex after installation.
+The commands above target the default branch, `main`. For reproducibility, use a known release tag or commit. For a single repository, replace `--global` with `--project /path/to/project`. Restart Codex after installation.
 
 Try a small, read-only task first:
 
@@ -141,6 +143,14 @@ python3 -m unittest discover -s tests -v
 ```
 
 [Cross-platform CI](https://github.com/NathalieChouLab/model-router-codex-public/actions/runs/44541675688) recorded 10/10 passing tests on each of macOS, Windows and Ubuntu for the V2 installer fix. This verifies installer behavior, not live model entitlements, delegation quality, security guarantees or performance improvements.
+
+## Project status and roadmap
+
+- [Published releases](https://github.com/NathalieChouLab/model-router-codex-public/releases) · [Changelog](CHANGELOG.md)
+- [Model compatibility](docs/compatibility.md) · [Benchmark protocol](docs/benchmarks.md)
+- [Development roadmap](ROADMAP.md) · [Security policy](SECURITY.md)
+
+The public edition is an early release: installer CI passes on three operating systems; live model entitlement and routing effectiveness are not yet validated. Contributions of reproducible results are welcome.
 
 ## Contributing
 
