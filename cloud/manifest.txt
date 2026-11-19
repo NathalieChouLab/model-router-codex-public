@@ -1,7 +1,11 @@
 agents/mr_scout.toml
-agents/mr_planner.toml
+agents/mr_researcher.toml
+agents/mr_writer.toml
 agents/mr_builder.toml
 agents/mr_tester.toml
+agents/mr_debugger.toml
+agents/mr_designer.toml
+agents/mr_architect.toml
 agents/mr_reviewer.toml
 AGENTS.md
 install.py

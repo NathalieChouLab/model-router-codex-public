@@ -1,3 +1,3 @@
 # Routing playbook
 
-Follow AGENTS.md. Work directly on small tasks; on complex work, gather evidence, plan, implement, test independently and review. Delegate only when beneficial. No concurrent overlapping writes or automatic release.
+See AGENTS.md for nine specialist roles and checkpoint escalation. Use direct execution for trivial work; parallelize only independent tasks. Never overlap writable paths or release on an unverified review.

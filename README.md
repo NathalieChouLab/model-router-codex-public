@@ -1,60 +1,65 @@
 # Model Router for Codex
 
-Five focused native Codex subagents and quality-first routing guidance. Unofficial, dependency-free installer; no hard-coded model IDs.
+Nine focused native Codex subagents with checkpoint-based routing, optional four-model profile and a dependency-free installer. Unofficial, MIT-licensed.
 
-## Install
+## Quick start
 
-Requires Python 3.11+ and a Codex release with custom subagents. Clone this repository, inspect the files, then run:
+Requires Python 3.11+ and a Codex release supporting custom subagents.
 
 ```sh
+git clone https://github.com/NathalieChouLab/model-router-codex-public.git
+cd model-router-codex-public
 python3 install.py --global --dry-run
 python3 install.py --global
 ```
 
-For one project use `--project /path/to/project` instead of `--global`. Restart Codex. Ask it to use mr_scout for evidence and mr_reviewer for an independent review.
+Use `--project /path/to/project` instead of `--global` for project scope. Restart Codex. Ask it to use mr_scout for evidence and mr_reviewer for independent review.
 
-| Agent | Role |
-|---|---|
-| mr_scout | Evidence and research |
-| mr_planner | Architecture and diagnosis |
-| mr_builder | Bounded implementation |
-| mr_tester | Independent testing |
-| mr_reviewer | Independent review |
+## Roles and optional latest profile
 
-## Model configuration
+| Agent | Model ID | Reasoning effort | Role |
+|---|---|---|---|
+| mr_scout | gpt-6-luna | low | Local exploration |
+| mr_researcher | gpt-6.1-terra | medium | External evidence |
+| mr_writer | gpt-6.2-sol | medium | Documentation |
+| mr_builder | gpt-6.2-sol | high | Implementation |
+| mr_tester | gpt-6.2-sol | high | Independent tests |
+| mr_debugger | gpt-6.2-sol | xhigh | Root cause |
+| mr_designer | gpt-6.1-terra | high | Visual review |
+| mr_architect | gpt-6.2-astra | xhigh | Architecture |
+| mr_reviewer | gpt-6.2-astra | high | Independent review |
 
-The agent files intentionally omit model and reasoning effort. Codex resolves these from explicit spawn settings, agent defaults and the parent session. Users can set supported model and effort values in Codex configuration or customize installed TOML files. Reinstalling resets managed files, so back up overrides first. No model availability or token savings are guaranteed.
+Model IDs verified against the [OpenAI API catalog](https://developers.openai.com/api/docs/models) on 2026-11-19. Account-specific Codex access is not guaranteed. These are suggested assignments, not measured benchmarks.
 
-[Official Codex subagent documentation](https://developers.openai.com/codex/subagents)
-
-### Optional model tiers, including Astra
-
-| Role | Suggested family when available in your account |
-|---|---|
-| Scout | Luna / fast model |
-| Builder, tester | Terra or Sol / implementation model |
-| Planner, reviewer | Astra / advanced reasoning model |
-
-The family labels above are suggestions, not guaranteed CLI identifiers or benchmark claims. Check Codex's model picker or official model documentation for the exact model IDs available to your account. Pass those IDs explicitly:
+The default profile inherits the active Codex model and effort. To opt into the four-model profile after confirming all IDs and effort levels in your Codex installation:
 
 ```sh
-python3 install.py --global --fast-model "$FAST_MODEL" --build-model "$BUILD_MODEL" --astra-model "$ASTRA_MODEL" --dry-run
+python3 install.py --global --profile latest --dry-run
+python3 install.py --global --profile latest
 ```
 
-Set FAST_MODEL, BUILD_MODEL and ASTRA_MODEL first to the exact supported IDs. Remove --dry-run when satisfied. Omitted or empty flags inherit the session model. No automatic downgrade or probing of a paid model is performed. Reinstall with the same flags to retain overrides.
+Override individual model groups with `--fast-model`, `--research-model`, `--build-model` and `--astra-model`. For custom models, keep inherited effort unless you confirm compatibility and explicitly use `--recommended-efforts`. The latest profile includes recommended efforts. No automatic paid model probes or fallback. Reinstall with the same options to keep model overrides.
 
-## Safety, updates and migration
+[Codex subagent documentation](https://developers.openai.com/codex/subagents)
 
-The installer backs up modified files, refuses unmanaged name collisions, and changes only the marked router block in AGENTS.md. It does not change config.toml or authentication. Re-run to update. Previously installed unprefixed agent files are deliberately left untouched; back them up and remove manually only if no longer needed. Review changes before using on important projects. Delegation guidance is not a security boundary.
+## Routing
 
-Uninstall with `python3 install.py --global --uninstall`, or use the original project scope. Run with `--dry-run` to preview. For cloud environments clone and inspect a trusted revision and execute the same installer in the target environment.
+Start with the smallest useful phase. Delegate evidence to scout/researcher, bounded edits to builder, tests to tester and review to reviewer. Unknown failures go to debugger; architectural decisions go to architect. Writer and designer handle dedicated content and visual work. Reassess after failures, scope changes and new evidence. No nested delegation or automatic deployment. Routing is guidance, not deterministic enforcement.
 
-## Test
+## Safety and migration
+
+The installer backs up changed files, refuses unmanaged name collisions and replaces only the marked router block in AGENTS.md. It does not modify authentication or config.toml. Upgrading from the previous five-role version retires the managed mr_planner file and adds mr_architect. Unmanaged files remain untouched. Reinstalling resets managed agent files, so preserve local overrides.
+
+Uninstall using `python3 install.py --global --uninstall` or the original project scope. Preview with `--dry-run`.
+
+For cloud environments, clone a trusted revision then run the same installer in the target environment.
+
+## Validation
 
 ```sh
 python3 -m unittest discover -s tests -v
 ```
 
-Installer tests do not establish live Codex account compatibility. Smoke-test a small read-only delegated task before use.
+Static and installer checks are not proof of live Codex compatibility. Smoke-test a small read-only delegated task with your selected profile before important work.
 
 MIT.
