@@ -17,6 +17,11 @@ EFFORTS = {"scout": "low", "researcher": "medium", "writer": "medium", "builder"
 START, END = "<!-- model-router:start -->", "<!-- model-router:end -->"
 HEADER = b"# Managed by model-router-codex\n"
 
+
+def is_managed(data):
+    """Accept LF and CRLF markers, without matching longer lookalike headers."""
+    return data.startswith((HEADER, HEADER.replace(b"\n", b"\r\n")))
+
 def read(path):
     if path.is_symlink() or (path.exists() and not path.is_file()):
         raise ValueError(f"Not a regular file: {path}")
@@ -43,11 +48,11 @@ def plan(home, ag, remove=False, models=None, efforts=None):
     for role in ROLES + LEGACY:
         path = home / "agents" / f"mr_{role}.toml"
         before = read(path)
-        if before is not None and not before.startswith(HEADER):
+        if before is not None and not is_managed(before):
             if remove or role in LEGACY:
                 continue
             raise ValueError(f"Refusing unmanaged agent collision: {path}")
-        after = None if remove or role in LEGACY else (ROOT / "agents" / path.name).read_bytes()
+        after = None if remove or role in LEGACY else (ROOT / "agents" / path.name).read_bytes().replace(b"\r\n", b"\n")
         if after is not None:
             if models.get(role):
                 after = after.replace(b'developer_instructions =', ('model = ' + json.dumps(models[role], ensure_ascii=False) + '\n' + 'developer_instructions =').encode(), 1)

@@ -78,3 +78,31 @@ class RouterTests(unittest.TestCase):
             old = home / "agents/mr_planner.toml"
             old.write_text("user-owned")
             self.assertNotIn(old, install.plan(home, home / "AGENTS.md"))
+
+    def test_crlf_managed_agent_update_uninstall(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            ag = home / "AGENTS.md"
+            path = home / "agents/mr_scout.toml"
+            path.parent.mkdir()
+            template = (install.ROOT / "agents/mr_scout.toml").read_bytes()
+            crlf = template.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+            path.write_bytes(crlf)
+            self.assertTrue(install.is_managed(crlf))
+            changes = install.plan(home, ag)
+            self.assertEqual(changes[path][0], crlf)
+            self.assertNotIn(b"\r\n", changes[path][1])
+            install.apply(home, changes)
+            self.assertTrue(install.is_managed(path.read_bytes()))
+            self.assertFalse(install.plan(home, ag))
+            path.write_bytes(crlf)
+            changes = install.plan(home, ag, remove=True)
+            self.assertIsNone(changes[path][1])
+            install.apply(home, changes)
+            self.assertFalse(path.exists())
+
+    def test_ownership_marker_is_exact(self):
+        self.assertTrue(install.is_managed(install.HEADER))
+        self.assertTrue(install.is_managed(install.HEADER.replace(b"\n", b"\r\n")))
+        self.assertFalse(install.is_managed(b"# Managed by model-router-codex-other\r\n"))
+        self.assertFalse(install.is_managed(b"# Managed by model-router-codex"))
