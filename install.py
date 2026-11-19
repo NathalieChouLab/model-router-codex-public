@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install five managed Codex agents. Python 3.11+."""
+"""Install nine managed Codex agents. Python 3.11+."""
 import argparse
 import json
 import os
@@ -10,9 +10,17 @@ import tempfile
 import tomllib
 
 ROOT = Path(__file__).resolve().parent
-ROLES = ("scout", "planner", "builder", "tester", "reviewer")
+ROLES = ("scout", "researcher", "writer", "builder", "tester", "debugger", "designer", "architect", "reviewer")
+LEGACY = ("planner",)
+LATEST_MODELS = {"scout": "gpt-6-luna", "researcher": "gpt-6.1-terra", "writer": "gpt-6.2-sol", "builder": "gpt-6.2-sol", "tester": "gpt-6.2-sol", "debugger": "gpt-6.2-sol", "designer": "gpt-6.1-terra", "architect": "gpt-6.2-astra", "reviewer": "gpt-6.2-astra"}
+EFFORTS = {"scout": "low", "researcher": "medium", "writer": "medium", "builder": "high", "tester": "high", "debugger": "xhigh", "designer": "high", "architect": "xhigh", "reviewer": "high"}
 START, END = "<!-- model-router:start -->", "<!-- model-router:end -->"
 HEADER = b"# Managed by model-router-codex\n"
+
+
+def is_managed(data):
+    """Accept LF and CRLF markers, without matching longer lookalike headers."""
+    return data.startswith((HEADER, HEADER.replace(b"\n", b"\r\n")))
 
 def read(path):
     if path.is_symlink() or (path.exists() and not path.is_file()):
@@ -31,22 +39,25 @@ def rules(before, block, remove=False):
         return (left + ("" if remove else block) + right).encode()
     return (text if remove else text + ("\n\n" if text else "") + block + "\n").encode()
 
-def plan(home, ag, remove=False, models=None):
+def plan(home, ag, remove=False, models=None, efforts=None):
+    efforts = efforts or {}
     models = models or {}
     if home.is_symlink() or (home / "agents").is_symlink():
         raise ValueError("Refusing symlinked target directories.")
     changes = {}
-    for role in ROLES:
+    for role in ROLES + LEGACY:
         path = home / "agents" / f"mr_{role}.toml"
         before = read(path)
-        if before is not None and not before.startswith(HEADER):
-            if remove:
+        if before is not None and not is_managed(before):
+            if remove or role in LEGACY:
                 continue
             raise ValueError(f"Refusing unmanaged agent collision: {path}")
-        after = None if remove else (ROOT / "agents" / path.name).read_bytes()
+        after = None if remove or role in LEGACY else (ROOT / "agents" / path.name).read_bytes().replace(b"\r\n", b"\n")
         if after is not None:
             if models.get(role):
                 after = after.replace(b'developer_instructions =', ('model = ' + json.dumps(models[role], ensure_ascii=False) + '\n' + 'developer_instructions =').encode(), 1)
+            if efforts.get(role):
+                after = after.replace(b'developer_instructions =', ('model_reasoning_effort = ' + json.dumps(efforts[role]) + '\n' + 'developer_instructions =').encode(), 1)
             config = tomllib.loads(after.decode())
             if config["name"] != path.stem or not config["developer_instructions"].strip():
                 raise ValueError(f"Invalid agent: {path.name}")
@@ -116,8 +127,11 @@ def main():
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--uninstall", action="store_true")
     p.add_argument("--fast-model", help="Exact Codex model ID for scout (e.g. account-supported Luna)")
-    p.add_argument("--build-model", help="Exact Codex model ID for builder and tester (e.g. account-supported Sol or Terra)")
-    p.add_argument("--astra-model", help="Exact Codex Astra model ID for planner and reviewer")
+    p.add_argument("--build-model", help="Exact Codex model ID for builder, tester, writer and debugger (e.g. account-supported Sol or Terra)")
+    p.add_argument("--astra-model", help="Exact Codex Astra model ID for architect and reviewer")
+    p.add_argument("--profile", choices=("inherit", "latest"), default="inherit", help="Opt in to current official API model IDs; confirm Codex account access first")
+    p.add_argument("--research-model", help="Exact Codex model ID for researcher and designer")
+    p.add_argument("--recommended-efforts", action="store_true", help="Opt in to role-specific efforts only if supported by selected models")
     a = p.parse_args()
     try:
         if a.project:
@@ -128,8 +142,10 @@ def main():
         else:
             home = Path(os.environ.get("CODEX_HOME") or "~/.codex").expanduser().absolute()
             ag = home / "AGENTS.md"
-        models = {"scout": a.fast_model, "builder": a.build_model, "tester": a.build_model, "planner": a.astra_model, "reviewer": a.astra_model}
-        changes = plan(home, ag, a.uninstall, models)
+        models = LATEST_MODELS.copy() if a.profile == "latest" else {}
+        overrides = {"scout": a.fast_model, "researcher": a.research_model, "designer": a.research_model, "builder": a.build_model, "tester": a.build_model, "writer": a.build_model, "debugger": a.build_model, "architect": a.astra_model, "reviewer": a.astra_model}
+        models.update({role: model for role, model in overrides.items() if model})
+        changes = plan(home, ag, a.uninstall, models, EFFORTS if a.recommended_efforts or a.profile == "latest" else None)
         if a.dry_run:
             for path, (_, after) in changes.items():
                 print(("REMOVE " if after is None else "WRITE ") + str(path))

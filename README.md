@@ -1,60 +1,155 @@
 # Model Router for Codex
 
-Five focused native Codex subagents and quality-first routing guidance. Unofficial, dependency-free installer; no hard-coded model IDs.
+**Right agent. Right model. Right level of reasoning.**
 
-## Install
+A lightweight, open-source toolkit for turning OpenAI Codex into a coordinated team of specialized coding agents. Instead of assigning every phase of a task to the same model, Model Router helps Codex select the right specialist, reassess when new evidence appears, and independently verify important changes.
 
-Requires Python 3.11+ and a Codex release with custom subagents. Clone this repository, inspect the files, then run:
+[![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB)](#quick-start)
+[![Agents](https://img.shields.io/badge/native%20agents-9-5865F2)](#meet-the-agents)
+[![Installer tests](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml/badge.svg?branch=v2%2Fnine-agent-public)](https://github.com/NathalieChouLab/model-router-codex-public/actions/workflows/ci.yml)
+
+## Why Model Router?
+
+A one-line fix does not need the same workflow as a difficult architecture decision. A developer who implements a change should not be the only one validating it.
+
+Model Router is designed around three principles:
+
+- **Quality first.** Escalate uncertain or high-impact decisions rather than guessing.
+- **Efficiency by design.** Use specialists only when they add value; handle trivial tasks directly.
+- **Independent verification.** Separate implementation, tests and review.
+
+No extra orchestration server, proxy, Python packages or API keys are required by the installer. It installs native Codex agent definitions and routing guidance; Codex itself still requires its normal setup and access.
+
+## How it works
+
+```mermaid
+flowchart TD
+    A[Incoming task] --> B{Needs delegation?}
+    B -->|No| C[Primary session acts directly]
+    B -->|Yes| D[Scout / Researcher]
+    D --> E{Unknown cause or high impact?}
+    E -->|Yes| F[Debugger / Architect]
+    E -->|No| G[Builder / Writer]
+    F -->|Accepted plan| G
+    D -. Visual task .-> V[Designer]
+    V --> G
+    G --> H[Independent Tester]
+    H --> I[Reviewer]
+    I -->|Pass| J[Primary session integrates]
+    I -->|Fail or unverified| K[Reassess cause and scope]
+    K --> E
+```
+
+Example flow for complex work. Not every task needs every phase. Routing is instruction-based and depends on Codex following the installed guidance; it is not a deterministic dispatch engine.
+
+## Quick start
+
+Requirements: Python 3.11+ and a Codex version supporting custom subagents. Run in a terminal (Windows users can substitute `python` or `py -3.11` for `python3`).
 
 ```sh
+git clone --branch v2/nine-agent-public https://github.com/NathalieChouLab/model-router-codex-public.git
+cd model-router-codex-public
 python3 install.py --global --dry-run
 python3 install.py --global
 ```
 
-For one project use `--project /path/to/project` instead of `--global`. Restart Codex. Ask it to use mr_scout for evidence and mr_reviewer for an independent review.
+The commands above target the V2 branch. For a single repository, replace `--global` with `--project /path/to/project`. Restart Codex after installation.
 
-| Agent | Role |
-|---|---|
-| mr_scout | Evidence and research |
-| mr_planner | Architecture and diagnosis |
-| mr_builder | Bounded implementation |
-| mr_tester | Independent testing |
-| mr_reviewer | Independent review |
+Try a small, read-only task first:
 
-## Model configuration
+> Use mr_scout to identify the entry point and existing tests in this repository. Return paths and evidence only. Do not edit anything.
 
-The agent files intentionally omit model and reasoning effort. Codex resolves these from explicit spawn settings, agent defaults and the parent session. Users can set supported model and effort values in Codex configuration or customize installed TOML files. Reinstalling resets managed files, so back up overrides first. No model availability or token savings are guaranteed.
+For a nontrivial change, explicitly ask Codex to apply Model Router and delegate independent verification.
 
-[Official Codex subagent documentation](https://developers.openai.com/codex/subagents)
+## Meet the agents
 
-### Optional model tiers, including Astra
+| Agent | Specialization | Example |
+|---|---|---|
+| `mr_scout` | Local exploration | Find a function, entry point or test |
+| `mr_researcher` | External evidence | Check current API documentation |
+| `mr_writer` | Documentation | Draft a README or migration guide |
+| `mr_builder` | Implementation | Apply an approved code change |
+| `mr_tester` | Independent testing | Add regression and edge-case tests |
+| `mr_debugger` | Root-cause analysis | Reproduce and isolate a failure |
+| `mr_designer` | Visual and interaction review | Assess accessibility and responsive layout |
+| `mr_architect` | Architecture and difficult decisions | Evaluate alternatives and plan migrations |
+| `mr_reviewer` | Independent verification | Review a diff and test evidence |
 
-| Role | Suggested family when available in your account |
-|---|---|
-| Scout | Luna / fast model |
-| Builder, tester | Terra or Sol / implementation model |
-| Planner, reviewer | Astra / advanced reasoning model |
+Scout, researcher, debugger, designer, architect and reviewer are configured as read-only. Other agents inherit applicable parent permissions; their instructions limit their assigned scope.
 
-The family labels above are suggestions, not guaranteed CLI identifiers or benchmark claims. Check Codex's model picker or official model documentation for the exact model IDs available to your account. Pass those IDs explicitly:
+## Model profiles: choose portability or specialization
+
+**Inherit (default):** agents use inherited model and reasoning settings. This is the recommended starting point, especially if you are unsure which models your Codex account supports.
+
+**Latest (opt-in):** uses the following proposed role assignments from the bundled profile. Confirm exact model IDs and reasoning-effort support against your Codex account before enabling it. The label latest is a named profile, not a live model-catalog updater.
+
+| Agent | Model ID | Reasoning effort |
+|---|---|---|
+| Scout | `gpt-6-luna` | low |
+| Researcher | `gpt-6.1-terra` | medium |
+| Designer | `gpt-6.1-terra` | high |
+| Writer | `gpt-6.2-sol` | medium |
+| Builder | `gpt-6.2-sol` | high |
+| Tester | `gpt-6.2-sol` | high |
+| Debugger | `gpt-6.2-sol` | xhigh |
+| Architect | `gpt-6.2-astra` | xhigh |
+| Reviewer | `gpt-6.2-astra` | high |
 
 ```sh
-python3 install.py --global --fast-model "$FAST_MODEL" --build-model "$BUILD_MODEL" --astra-model "$ASTRA_MODEL" --dry-run
+python3 install.py --global --profile latest --dry-run
+python3 install.py --global --profile latest
 ```
 
-Set FAST_MODEL, BUILD_MODEL and ASTRA_MODEL first to the exact supported IDs. Remove --dry-run when satisfied. Omitted or empty flags inherit the session model. No automatic downgrade or probing of a paid model is performed. Reinstall with the same flags to retain overrides.
+Customize groups with `--fast-model`, `--research-model`, `--build-model` and `--astra-model` using exact supported IDs. For custom models, start with the inherit profile and enable `--recommended-efforts` only after checking compatibility. The latest profile always includes the listed efforts. Reinstall with the same options to preserve overrides.
 
-## Safety, updates and migration
+There is no automatic paid-model probe, silent fallback, or guaranteed cost saving. These assignments are design choices, not benchmark rankings.
 
-The installer backs up modified files, refuses unmanaged name collisions, and changes only the marked router block in AGENTS.md. It does not change config.toml or authentication. Re-run to update. Previously installed unprefixed agent files are deliberately left untouched; back them up and remove manually only if no longer needed. Review changes before using on important projects. Delegation guidance is not a security boundary.
+See the [Codex subagent documentation](https://developers.openai.com/codex/subagents) and [OpenAI model catalog](https://developers.openai.com/api/docs/models).
 
-Uninstall with `python3 install.py --global --uninstall`, or use the original project scope. Run with `--dry-run` to preview. For cloud environments clone and inspect a trusted revision and execute the same installer in the target environment.
+## Example use cases
 
-## Test
+| Task | Possible route |
+|---|---|
+| Fix an obvious typo | Primary session, directly |
+| Debug an intermittent failure | Debugger → Builder → Tester → Reviewer |
+| Integrate an unfamiliar API | Researcher → Builder → Tester → Reviewer |
+| Review a responsive dashboard | Designer → Builder → Reviewer |
+| Plan a risky architecture change | Architect → human approval → Builder → Tester → Reviewer |
+
+See [worked task prompts](references/quickstart-prompts.md) for examples you can adapt.
+
+## Installation safety and maintenance
+
+The installer previews changes with `--dry-run`, backs up affected files, refuses unmanaged name collisions, and updates only its marked section in AGENTS.md. It does not edit authentication or config.toml. Upgrading from the five-agent public version retires the managed mr_planner definition and installs mr_architect.
+
+Re-run to update; modified managed agent files are replaced after backup. Unmanaged and unrelated files remain untouched. Use your original scope when uninstalling:
+
+```sh
+python3 install.py --global --uninstall --dry-run
+python3 install.py --global --uninstall
+```
+
+For cloud environments, clone a trusted revision and run the same installer in the target environment.
+
+## Validation and limitations
+
+The installer suite covers configuration parsing, optional model settings, install/update/uninstall, ownership collisions, migration and Windows CRLF handling.
 
 ```sh
 python3 -m unittest discover -s tests -v
 ```
 
-Installer tests do not establish live Codex account compatibility. Smoke-test a small read-only delegated task before use.
+[Cross-platform CI](https://github.com/NathalieChouLab/model-router-codex-public/actions/runs/44541675688) recorded 10/10 passing tests on each of macOS, Windows and Ubuntu for the V2 installer fix. This verifies installer behavior, not live model entitlements, delegation quality, security guarantees or performance improvements.
 
-MIT.
+## Contributing
+
+Bug reports, documentation improvements and reproducible model-compatibility reports are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+If Model Router is useful, star the repository or share a reproducible workflow. Feedback from real projects is especially valuable.
+
+## License
+
+[MIT](LICENSE) · Maintained by [NathalieChouLab](https://github.com/NathalieChouLab).
+
+Independent open-source project, not an official OpenAI product.
